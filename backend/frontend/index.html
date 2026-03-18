@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finance Tracker</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .header {
+            background: #1e293b;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #38bdf8;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #38bdf8;
+            border: none;
+            border-radius: 6px;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0ea5e9;
+        }
+
+        .transactions {
+            flex: 1;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #334155;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .income {
+            border-left: 5px solid #22c55e;
+        }
+
+        .expense {
+            border-left: 5px solid #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    💰 Finance Tracker Dashboard
+</div>
+
+<div class="container">
+
+    <!-- LEFT SIDE -->
+    <div>
+
+        <div class="card">
+            <h2>Login</h2>
+            <input id="email" placeholder="Email">
+            <input id="password" type="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div class="card">
+            <h2>Add Transaction</h2>
+            <input id="amount" placeholder="Amount">
+            <input id="category" placeholder="Category">
+
+            <select id="type">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+
+            <button onclick="addTransaction()">Add</button>
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="card transactions">
+        <h2>Transactions</h2>
+        <button onclick="getTransactions()">Load</button>
+        <ul id="list"></ul>
+    </div>
+
+</div>
+
+<script>
+let token = ""
+
+async function login() {
+    const res = await fetch("http://127.0.0.1:8000/auth/login", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `username=${encodeURIComponent(document.getElementById("email").value)}&password=${encodeURIComponent(document.getElementById("password").value)}`
+    })
+
+    const data = await res.json()
+    console.log(data)
+
+    token = data.access_token
+
+    if (!token) {
+        alert("Login failed ❌")
+    } else {
+        alert("Login success ✅")
+    }
+}
+
+async function addTransaction() {
+    if (!token) {
+        alert("Login first ❌")
+        return
+    }
+
+    await fetch("http://127.0.0.1:8000/transactions/add", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            amount: Number(document.getElementById("amount").value),
+            category: document.getElementById("category").value,
+            type: document.getElementById("type").value
+        })
+    })
+
+    alert("Added ✅")
+}
+
+async function getTransactions() {
+    if (!token) {
+        alert("Login first ❌")
+        return
+    }
+
+    const res = await fetch("http://127.0.0.1:8000/transactions/", {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    })
+
+    const data = await res.json()
+
+    let list = document.getElementById("list")
+    list.innerHTML = ""
+
+    data.forEach(t => {
+        let li = document.createElement("li")
+        li.className = t.type
+        li.innerText = `${t.amount} ₹ - ${t.category} (${t.type})`
+        list.appendChild(li)
+    })
+}
+</script>
+
+</body>
+</html>
